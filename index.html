@@ -11,27 +11,84 @@
             background-color: #f6f8fa;
             margin: 0;
             padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
-        #container {
-            max-width: 1000px;
-            margin: 20px auto;
+        #header {
+            text-align: center;
             padding: 20px;
-            background-color: #ffffff;
-            border: 1px solid #d0d7de;
-            border-radius: 8px;
+            background-color: #0366d6;
+            color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 10px;
         }
         h1 {
-            color: #0366d6;
             font-size: 24px;
-            margin-bottom: 10px;
+            margin: 0;
+        }
+        #token-container {
+            height: auto;
+            margin: 10px auto;
+            overflow: hidden;
+            text-align: center;
+            transition: all 0.5s ease;
+        }
+        #token-container.hidden {
+            height: 0;
+            margin: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #token-input {
+            padding: 10px;
+            border-radius: 8px;
+        }
+        input[type="password"] {
+            width: 250px;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #ffffff;
+            background-color: #0366d6;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #025bb5;
+        }
+        #container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            transition: margin-top 0.5s ease;
         }
         #directory {
-            margin-top: 20px;
-            padding: 0;
-            background-color: #f6f8fa;
+            flex: 0 0 250px;
+            background-color: #f0f8ff;
             border: 1px solid #d0d7de;
-            border-radius: 6px;
+            overflow-y: auto;
             padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 10px;
+        }
+        #file-viewer {
+            flex: 1;
+            padding: 20px;
+            background-color: #ffffff;
+            overflow-y: auto;
+            border-radius: 12px;
+            margin: 10px;
         }
         ul {
             list-style: none;
@@ -40,26 +97,24 @@
         }
         li {
             margin: 5px 0;
+            padding-left: 15px; /* Add indentation for subdirectories */
         }
         li a {
             text-decoration: none;
-            color: #0969da;
-            display: flex;
-            align-items: center;
+            color: #0366d6;
+            display: block;
+            padding: 5px;
+            border-radius: 4px;
         }
         li a:hover {
-            text-decoration: underline;
+            background-color: #eaecef;
         }
-        li a svg {
-            margin-right: 5px;
+        li a.active {
+            background-color: #0366d6;
+            color: #ffffff;
         }
-        #file-viewer {
-            margin-top: 20px;
-            padding: 20px;
-            background-color: #ffffff;
-            border: 1px solid #d0d7de;
-            border-radius: 8px;
-            overflow-x: auto;
+        li ul {
+            margin-left: 15px; /* Additional indentation for nested directories */
         }
         pre {
             background-color: #f6f8fa;
@@ -67,34 +122,38 @@
             border: 1px solid #d0d7de;
             border-radius: 6px;
             overflow-x: auto;
-            font-family: Consolas, monospace !important; /* Force Consolas font for code blocks */
-            white-space: pre; /* Preserve all spaces and line breaks */
-            tab-size: 4; /* Ensure consistent tab size */
-            line-height: normal; /* Restore default line spacing */
-            margin: 0; /* Remove extra margin around pre */
+            font-family: Consolas, monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            tab-size: 4;
+            margin: 0;
         }
         code {
             font-family: inherit;
-            line-height: inherit; /* Ensure code inherits line height from pre */
         }
         #error {
             color: red;
-            margin-top: 10px;
+            text-align: center;
+            margin: 0px 0;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <div id="container">
+    <div id="header">
         <h1>GitHub Repo Viewer</h1>
-        <p>Enter your Personal Access Token to view the repository:</p>
-        <input type="password" id="token" placeholder="Enter FGPAT" required>
-        <button onclick="loadRepo()">Load Repository</button>
-        <p id="error"></p>
-
+    </div>
+    <div id="token-container">
+        <div id="token-input">
+            <input type="password" id="token" placeholder="Enter Personal Access Token" required>
+            <button onclick="loadRepo()">Load Repository</button>
+        </div>
+    </div>
+    <p id="error"></p>
+    <div id="container">
         <div id="directory"></div>
-        <div id="file-viewer" class=""></div>
+        <div id="file-viewer"></div>
     </div>
 
     <script>
@@ -109,11 +168,12 @@
             const errorElement = document.getElementById('error');
             const directoryElement = document.getElementById('directory');
             const fileViewerElement = document.getElementById('file-viewer');
+            const tokenContainer = document.getElementById('token-container');
+            const container = document.getElementById('container');
 
             errorElement.textContent = '';
-            directoryElement.innerHTML = '';
-            fileViewerElement.innerHTML = '';
-            fileViewerElement.className = '';
+            directoryElement.innerHTML = '<p>Loading directory...</p>';
+            fileViewerElement.innerHTML = '<p>Loading file content...</p>';
 
             if (!token) {
                 errorElement.textContent = 'Token is required.';
@@ -122,12 +182,19 @@
 
             try {
                 const rootContents = await fetchContents('', token);
+
+                // Hide token container and adjust layout
+                tokenContainer.classList.add('hidden');
+
+                // Dynamically calculate margin-top based on the height of the token container
+                const tokenHeight = tokenContainer.offsetHeight;
+                container.style.marginTop = `${parseInt(container.style.marginTop || 0) - tokenHeight}px`;
+
                 renderDirectory(rootContents, directoryElement, token);
 
-                // Render README.md by default
                 const readmeFile = rootContents.find((file) => file.name.toLowerCase() === 'readme.md');
                 if (readmeFile) {
-                    await loadMarkdown(readmeFile.path, token);
+                    await loadMarkdown(readmeFile.path, token, null);
                 } else {
                     fileViewerElement.innerHTML = `<p>No README.md found in this repository.</p>`;
                 }
@@ -140,7 +207,7 @@
             const url = path ? `${apiBaseUrl}/contents/${path}` : `${apiBaseUrl}/contents`;
             const response = await fetch(url, {
                 headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `Bearer ${token}`,
                     'Accept': 'application/vnd.github.v3+json',
                 },
             });
@@ -160,19 +227,16 @@
                 const li = document.createElement('li');
                 if (item.type === 'dir') {
                     li.innerHTML = `<a href="#" onclick="event.preventDefault(); loadSubdirectory('${item.path}', '${token}', this)">
-                        <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 16 16"><path fill="#0366d6" d="M10 4H6V3H4v2h8V3h-2v1zm-6 6h8v-1H4v1z"/></svg>${item.name}/</a>`;
+                        <strong>${item.name}</strong></a>`;
                 } else if (item.type === 'file' && isMarkdownFile(item.name)) {
-                    li.innerHTML = `<a href="#" onclick="event.preventDefault(); loadMarkdown('${item.path}', '${token}')">
-                        <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 16 16"><path fill="#0366d6" d="M7.5 3H2v10h12V6.5l-4.5-3.5zM3 5h7v2h-2v4h-2V7H3V5zm8.5 0l3 2.5h-3V5z"/></svg>${item.name}</a>`;
-                } else if (item.type === 'file' && isTextFile(item.name)) {
-                    li.innerHTML = `<a href="#" onclick="event.preventDefault(); loadFile('${item.path}', '${token}')">
-                        <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 16 16"><path fill="#0366d6" d="M7.5 3H2v10h12V6.5l-4.5-3.5zM3 5h7v2h-2v4h-2V7H3V5zm8.5 0l3 2.5h-3V5z"/></svg>${item.name}</a>`;
-                } else {
-                    li.innerHTML = `<a href="${item.html_url}" target="_blank">${item.name}</a>`;
+                    li.innerHTML = `<a href="#" onclick="event.preventDefault(); loadMarkdown('${item.path}', '${token}', this)">${item.name.split('.')[0]}</a>`;
+                } else if (item.type === 'file') {
+                    li.innerHTML = `<a href="#" onclick="event.preventDefault(); loadFile('${item.path}', '${token}', this)">${item.name.split('.')[0]}</a>`;
                 }
                 ul.appendChild(li);
             });
 
+            container.innerHTML = '';
             container.appendChild(ul);
         }
 
@@ -187,7 +251,7 @@
 
             try {
                 const subContents = await fetchContents(path, token);
-                const subContainer = document.createElement('div');
+                const subContainer = document.createElement('ul');
                 renderDirectory(subContents, subContainer, token);
                 parentLi.appendChild(subContainer);
             } catch (error) {
@@ -195,20 +259,19 @@
             }
         }
 
-        async function loadMarkdown(path, token) {
+        async function loadMarkdown(path, token, element) {
+            highlightActiveFile(element);
             const fileViewerElement = document.getElementById('file-viewer');
-            fileViewerElement.className = 'markdown';
-            fileViewerElement.innerHTML = '';
+            fileViewerElement.innerHTML = '<p>Loading...</p>';
 
             try {
                 const fileData = await fetchContents(path, token);
                 const decodedContent = atob(fileData.content);
 
-                // Render Markdown using GitHub API
                 const response = await fetch('https://api.github.com/markdown', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `token ${token}`,
+                        'Authorization': `Bearer ${token}`,
                         'Accept': 'application/vnd.github.v3+json',
                         'Content-Type': 'application/json',
                     },
@@ -219,30 +282,25 @@
                     const renderedHtml = await response.text();
                     fileViewerElement.innerHTML = renderedHtml;
 
-                    // Re-render MathJax for formulas
+                    // Render math formulas using MathJax
                     MathJax.typesetPromise();
-
-                    // Highlight code blocks
-                    document.querySelectorAll('#file-viewer pre code').forEach((block) => {
-                        hljs.highlightElement(block);
-                    });
                 } else {
-                    fileViewerElement.innerHTML = `<pre>${decodedContent}</pre>`;
+                    fileViewerElement.innerHTML = `<pre>${sanitizeContent(decodedContent)}</pre>`;
                 }
             } catch (error) {
                 fileViewerElement.textContent = `Failed to load Markdown file: ${error.message}`;
             }
         }
 
-        async function loadFile(path, token) {
+        async function loadFile(path, token, element) {
+            highlightActiveFile(element);
             const fileViewerElement = document.getElementById('file-viewer');
-            fileViewerElement.className = 'code';
-            fileViewerElement.innerHTML = '';
+            fileViewerElement.innerHTML = '<p>Loading...</p>';
 
             try {
                 const fileData = await fetchContents(path, token);
                 const decodedContent = atob(fileData.content);
-                fileViewerElement.innerHTML = `<pre><code>${decodedContent}</code></pre>`;
+                fileViewerElement.innerHTML = `<pre><code>${sanitizeContent(decodedContent)}</code></pre>`;
                 hljs.highlightAll();
             } catch (error) {
                 fileViewerElement.textContent = `Failed to load file content: ${error.message}`;
@@ -253,8 +311,17 @@
             return markdownExtensions.some((ext) => fileName.endsWith(ext));
         }
 
-        function isTextFile(fileName) {
-            return textFileExtensions.some((ext) => fileName.endsWith(ext));
+        function sanitizeContent(content) {
+            const div = document.createElement('div');
+            div.textContent = content;
+            return div.innerHTML;
+        }
+
+        function highlightActiveFile(element) {
+            if (!element) return; // Guard against null or undefined
+            const links = document.querySelectorAll('#directory a');
+            links.forEach((link) => link.classList.remove('active'));
+            element.classList.add('active');
         }
     </script>
 </body>
